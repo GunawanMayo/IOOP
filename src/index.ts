@@ -1,6 +1,6 @@
 import express , { Express } from "express";
 import cors from "cors";
-import mysql, { Connection } from "mysql2/promise";
+import mysql, { Connection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import * as dotenv from "dotenv";
 
 // const express = require("express");
@@ -32,10 +32,32 @@ async function main() {
 
   // console.log(result);
 
+  type Todo = {
+    id : number;
+    title : string;
+    description : string;
+    createdAt? : Date;
+    updatedAt? : Date;
+  };
+
   app.get("/api/todos", async(req,res) => {
     const sql = "select * FROM todos";
-    const [rows]= await connection.execute(sql);
+    const [rows]= await connection.execute<Todo[] & RowDataPacket[]>(sql);
     res.json(rows);
+  });
+
+  app.get("/api/todos/:id", async(req,res) => {
+    const id = parseInt(req.params.id);
+    const sql = `select * FROM todos WHERE id=${id}`;
+    const [rows] = await connection.execute<Todo[]& RowDataPacket[]>(sql);
+    res.json(rows[0]);
+  });
+
+  app.post("/api/todos", async(req,res) => {
+    const todo = req.body
+    const sql = `INSERT INTO todos(title, description) VALUES ("${todo.title}", "${todo.description}")`;
+    const [result] = await connection.execute<ResultSetHeader>(sql);
+    res.status(201).json(result.insertId);
   });
 
 //   app.get('/', (req, res) => {
